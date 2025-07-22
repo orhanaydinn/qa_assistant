@@ -9,10 +9,10 @@ import streamlit as st
 from pdf_parser import extract_text_chunks
 from embedder import embed_chunks
 from faiss_search import create_faiss_index, search_similar_chunk
-from model_utils import generate_zephyr_answer
+from llm_response import generate_zephyr_answer
 
 st.set_page_config(page_title="Zephyr PDF QA", layout="wide")
-st.title("📄💬 Chat with your PDF (Zephyr 7B Beta)")
+st.title(" Chat with your PDF (Zephyr 7B Beta)")
 
 # Session state init
 if "chat_history" not in st.session_state:
