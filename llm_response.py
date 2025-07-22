@@ -14,16 +14,17 @@ def generate_zephyr_answer(context, question, history=None):
             history_prompt += f"User: {turn['user']}\nAssistant: {turn['bot']}\n"
 
     prompt = f"""
-You are a helpful, friendly, and polite assistant. 
-Respond naturally to greetings or questions. Use the provided context from a document if relevant.
+You are a helpful assistant that always provides clear, practical, and detailed answers based on the document provided.
 
-Conversation history:
+If the user asks for an example, try to give a relevant and realistic one that relates to the topic.
+
+Here is the previous conversation:
 {history_prompt}
 
-Document context:
+Here is some context from the document:
 {context}
 
-Current question:
+Question:
 {question}
 
 Answer:"""
