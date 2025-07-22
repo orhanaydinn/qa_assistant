@@ -6,8 +6,11 @@ from llm_response import generate_zephyr_answer
 
 # Sayfa ayarları
 st.set_page_config(page_title="Chat with PDF - Zephyr", layout="wide")
-st.markdown("<h2 style='text-align:center;'>Chat with your PDF (Zephyr 7B)</h2>", unsafe_allow_html=True)
-st.markdown("<p style='font-size: 16px;'>This project developed by <strong>Orhan Aydin</strong></p>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align:center;'>Chat with your PDF AI - Zephyr 7B</h2>", unsafe_allow_html=True)
+st.markdown(
+    "<p style='text-align: center; font-size: 16px;'>This project developed by <strong>Orhan Aydin</strong></p>",
+    unsafe_allow_html=True
+)
 
 # Session state başlat
 if "chat_history" not in st.session_state:
