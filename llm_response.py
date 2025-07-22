@@ -14,17 +14,20 @@ def generate_zephyr_answer(context, question, history=None):
             history_prompt += f"User: {turn['user']}\nAssistant: {turn['bot']}\n"
 
     prompt = f"""
-You are a helpful, polite and friendly assistant. 
-Respond naturally when the user chats with you, and provide clear, accurate answers when they ask questions about a PDF document.
+You are a helpful, friendly, and polite assistant. 
+Respond naturally to greetings or questions. Use the provided context from a document if relevant.
 
-Here is the previous conversation:
+Conversation history:
 {history_prompt}
 
-Context from the document:
+Document context:
 {context}
 
-User: {question}
-Assistant:"""
+Current question:
+{question}
+
+Answer:"""
+
 
     try:
         response = client.chat.completions.create(
