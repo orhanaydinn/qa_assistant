@@ -5,8 +5,9 @@ from faiss_search import create_faiss_index, search_similar_chunk
 from llm_response import generate_zephyr_answer
 
 # Sayfa ayarları
-st.set_page_config(page_title="📄 Chat with PDF - Zephyr", layout="wide")
-st.markdown("<h2 style='text-align:center;'>💬 Chat with your PDF (Zephyr 7B)</h2>", unsafe_allow_html=True)
+st.set_page_config(page_title="Chat with PDF - Zephyr", layout="wide")
+st.markdown("<h2 style='text-align:center;'>Chat with your PDF (Zephyr 7B)</h2>", unsafe_allow_html=True)
+st.markdown("<p style='font-size: 16px;'>This project developed by <strong>Orhan Aydin</strong></p>", unsafe_allow_html=True)
 
 # Session state başlat
 if "chat_history" not in st.session_state:
@@ -30,9 +31,9 @@ def render_chat(user, bot):
     """, unsafe_allow_html=True)
 
 # PDF yükleme
-uploaded_file = st.file_uploader("📄 Upload your PDF file", type=["pdf"])
+uploaded_file = st.file_uploader("Upload your PDF file", type=["pdf"])
 if uploaded_file:
-    with st.spinner("🔎 Processing PDF..."):
+    with st.spinner("Processing PDF..."):
         chunks = extract_text_chunks(uploaded_file)
         embeddings = embed_chunks(chunks)
         index = create_faiss_index(embeddings)
@@ -40,12 +41,12 @@ if uploaded_file:
         st.session_state.pdf_chunks = chunks
         st.session_state.pdf_embeddings = embeddings
         st.session_state.pdf_index = index
-    st.success("✅ PDF is ready for chat!")
+    st.success("PDF is ready for chat!")
 
 st.markdown("---")
 
 # Kullanıcı girişi
-user_input = st.text_input("💬 Ask a question or say something:")
+user_input = st.text_input("Ask a question or say something:")
 
 if user_input:
     # History + context
@@ -55,7 +56,7 @@ if user_input:
     if st.session_state.pdf_chunks and st.session_state.pdf_index:
         context = search_similar_chunk(user_input, st.session_state.pdf_index, st.session_state.pdf_chunks)
 
-    with st.spinner("🤖 Generating answer..."):
+    with st.spinner("Generating answer..."):
         answer = generate_zephyr_answer(context, user_input, history)
 
     # Geçmişe ekle
@@ -63,6 +64,6 @@ if user_input:
 
 # Sohbet geçmişini yazdır
 if st.session_state.chat_history:
-    st.markdown("### 🗨️ Conversation", unsafe_allow_html=True)
+    st.markdown("### Conversation", unsafe_allow_html=True)
     for chat in st.session_state.chat_history[::-1]:
         render_chat(chat["user"], chat["bot"])
