@@ -21,9 +21,11 @@ DETAIL_KEYWORDS = [
 
 def is_response_broken(text):
     weirdness_score = sum(1 for c in text if ord(c) > 1000 or c in "¼½¾™®©•§µ")
+    has_fake_q = any(kw in text.lower() for kw in ["user:", "question:", "q:", "can you explain more about"])
     return (
         len(text) > 2000 or
         weirdness_score > 5 or
+        has_fake_q or
         any(bad in text.lower() for bad in [
             "retrieved from", "last revised", "wikipedia.org",
             "porn", "xxx", "tube8", "custom essay"
@@ -35,16 +37,15 @@ def generate_zephyr_answer(context, question, history=None):
     if history:
         last_n = history[-1:] if len(history) >= 1 else history
         for turn in last_n:
-            history_prompt += f"User: {turn['user']}\nAssistant: {turn['bot']}\n"
+            history_prompt += f"{turn['user']}\n{turn['bot']}\n"
 
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
     last_user_turn = history[-1]["user"] if history else ""
 
-    # Eğer soru sadece “give an example” gibi belirsizse, önceki soruya bağla
     if question.strip().lower() in ["give an example", "can you give an example?"] and last_user_turn:
-        effective_question = f"{last_user_turn}\nFollow-up: {question}"
+        effective_question = f"{last_user_turn} {question}"
     elif wants_detail and len(question.split()) <= 8 and last_user_turn:
-        effective_question = f"{last_user_turn} -> {question}"
+        effective_question = f"{last_user_turn} {question}"
     else:
         effective_question = question
 
@@ -64,11 +65,12 @@ Use the context and short chat history below to answer the user's current questi
 
 Do not invent new questions.
 Do not continue the conversation unless asked.
+Avoid repeating or generating follow-up questions.
 
 Context:
 {context}
 
-Chat history:
+Recent exchange:
 {history_prompt}
 
 User question:
@@ -97,11 +99,13 @@ User question:
 
         answer = response.choices[0].message.content.strip()
 
+        # Temizlik: “Assistant:” başlığını sil
         if answer.lower().startswith("assistant:"):
             answer = answer[len("assistant:"):].strip()
 
+        # Assistant kendi kendine soru üretmişse temizle
         if is_response_broken(answer):
-            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "⚠️ The assistant generated an invalid or off-topic response. Please rephrase your question."
 
         return answer
 
