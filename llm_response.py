@@ -20,14 +20,21 @@ DETAIL_KEYWORDS = [
 ]
 
 def is_response_broken(text):
+    weirdness_score = sum(1 for c in text if ord(c) > 1000 or c in "¼½¾™®©•§µ")
     return (
         len(text) > 2000 or
+        weirdness_score > 5 or
         any(bad in text.lower() for bad in [
-            "retrieved from", "last revised", "wikipedia.org", "porn", "xxx", "tube8", "custom essay"
+            "retrieved from", "last revised", "wikipedia.org",
+            "porn", "xxx", "tube8", "custom essay"
         ])
     )
 
 def generate_zephyr_answer(context, question, history=None):
+    # Belirsiz örnek sorularını önle
+    if question.strip().lower() in ["give an example", "can you give an example?"]:
+        return "⚠️ Please specify what you'd like an example of (e.g. 'Give an example of blockchain in healthcare.')"
+
     history_prompt = ""
     if history:
         for turn in history:
@@ -85,16 +92,15 @@ User question:
             max_tokens=350 if wants_detail else 250
         )
 
-        # Boş veya beklenmedik yanıt kontrolü
         if not response or not response.choices or not response.choices[0].message:
-            return "The assistant could not generate a valid response. Please try again."
+            return "⚠️ The assistant could not generate a valid response. Please try again."
 
         answer = response.choices[0].message.content.strip()
 
         if is_response_broken(answer):
-            return "The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"Error during API call: {e}"
+        return f"⚠️ Error during API call: {e}"
