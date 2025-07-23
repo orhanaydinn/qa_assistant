@@ -53,7 +53,7 @@ def clean_response(text):
             return text.split(token)[0].strip()
     return text.strip()
 
-def generate_zephyr_answer(context, question, history=None):
+def generate_zephyr_answer(context, question, history=None, preview=False):
     status_message = "Generating answer..."
 
     if needs_web_context(question):
