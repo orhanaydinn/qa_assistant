@@ -37,7 +37,9 @@ def generate_zephyr_answer(context, question, history=None):
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
 
     last_user_turn = history[-1]["user"] if history else ""
-    if wants_detail and last_user_turn and not any(kw in question.lower() for kw in last_user_turn.lower().split()):
+
+    # Eğer soru kısa ve detay istiyorsa, bağlama zorla
+    if wants_detail and len(question.split()) <= 8 and last_user_turn:
         effective_question = f"{last_user_turn}\nFollow-up: {question}"
     else:
         effective_question = question
@@ -47,9 +49,8 @@ def generate_zephyr_answer(context, question, history=None):
     else:
         style_instruction = "Answer clearly and concisely in 2–3 sentences. Do not add extra explanation unless asked."
 
+    # Prompt yerine sadeleştirilmiş "system" + "user" formatı
     prompt = f"""
-You are a helpful and knowledgeable AI assistant.
-
 {style_instruction}
 
 Use the context and chat history below to answer the user's current question only.
@@ -66,12 +67,21 @@ Chat history:
 
 User question:
 {effective_question}
-"""
+""".strip()
 
     try:
         response = client.chat.completions.create(
             model="HuggingFaceH4/zephyr-7b-alpha",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful and concise assistant. Do not ask your own questions. Do not continue the conversation. Only respond directly to the user input."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
             temperature=0.7,
             max_tokens=250
         )
