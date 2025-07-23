@@ -22,16 +22,14 @@ def get_web_summary_serper(query):
         json_data = res.json()
 
         snippets = []
-        # 1. AnswerBox varsa onu al
         if "answerBox" in json_data and "answer" in json_data["answerBox"]:
             snippets.append(json_data["answerBox"]["answer"])
-        # 2. Organic sonuçlardan ilk 1-2 snippet
         for item in json_data.get("organic", [])[:2]:
             if "snippet" in item:
                 snippets.append(item["snippet"])
-        return " ".join(snippets)
+        return " ".join(snippets).strip()
     except Exception as e:
-        return f"(web error: {e})"
+        return ""
 
 def needs_web_context(question):
     keywords = [
@@ -71,8 +69,8 @@ def generate_zephyr_answer(context, question, history=None):
 
     if needs_web_context(question):
         web_info = get_web_summary_serper(question)
-        if web_info and "error" not in web_info.lower():
-            context = f"[WEB RESULT]\n{web_info}\n\n{context}"
+        if web_info.strip():
+            context = f"[WEB RESULT]\n{web_info.strip()}\n\n{context}"
             used_web = True
             status_message = "Searching the internet..."
         else:
