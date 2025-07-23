@@ -38,7 +38,6 @@ def generate_zephyr_answer(context, question, history=None):
 
     last_user_turn = history[-1]["user"] if history else ""
 
-    # Eğer soru kısa ve detay istiyorsa, bağlama zorla
     if wants_detail and len(question.split()) <= 8 and last_user_turn:
         effective_question = f"{last_user_turn}\nFollow-up: {question}"
     else:
@@ -49,15 +48,17 @@ def generate_zephyr_answer(context, question, history=None):
     else:
         style_instruction = "Answer clearly and concisely in 2–3 sentences. Do not add extra explanation unless asked."
 
-    # Prompt yerine sadeleştirilmiş "system" + "user" formatı
+    # Güncellenmiş prompt
     prompt = f"""
+You are a helpful and knowledgeable AI assistant.
+
 {style_instruction}
 
 Use the context and chat history below to answer the user's current question only.
 
 Do not invent new questions.
 Do not continue the conversation unless asked.
-Only provide a direct answer to the user's question.
+If the user asks for more detail, you may expand the answer with examples, but do not start new topics or continue the answer indefinitely.
 
 Context:
 {context}
@@ -83,14 +84,14 @@ User question:
                 }
             ],
             temperature=0.7,
-            max_tokens=250
+            max_tokens=350 if wants_detail else 250
         )
         answer = response.choices[0].message.content.strip()
 
         if is_response_broken(answer):
-            return "The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"Error during API call: {e}"
+        return f"⚠️ Error during API call: {e}"
