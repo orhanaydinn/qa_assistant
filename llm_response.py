@@ -31,11 +31,6 @@ def is_response_broken(text):
     )
 
 def generate_zephyr_answer(context, question, history=None):
-    # Belirsiz örnek sorularını önle
-    if question.strip().lower() in ["give an example", "can you give an example?"]:
-        return "Please specify what you'd like an example of (e.g. 'Give an example of blockchain in healthcare.')"
-
-    # Cevap geçmişi (maksimum 1-2 son dönüş)
     history_prompt = ""
     if history:
         last_n = history[-1:] if len(history) >= 1 else history
@@ -45,13 +40,17 @@ def generate_zephyr_answer(context, question, history=None):
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
     last_user_turn = history[-1]["user"] if history else ""
 
-    if wants_detail and len(question.split()) <= 8 and last_user_turn:
+    # Eğer soru sadece “give an example” gibi belirsizse, önceki soruya bağla
+    if question.strip().lower() in ["give an example", "can you give an example?"] and last_user_turn:
+        effective_question = f"{last_user_turn}\nFollow-up: {question}"
+    elif wants_detail and len(question.split()) <= 8 and last_user_turn:
         effective_question = f"{last_user_turn} -> {question}"
     else:
         effective_question = question
 
     style_instruction = (
-        "Provide a more detailed and expanded answer. Include an example if applicable."
+        "If the user asks for more detail or an example, respond with 3–5 concise sentences. "
+        "Include one focused example relevant to the recent question. Do not go off-topic or provide multiple examples."
         if wants_detail
         else "Answer clearly and concisely in 2–3 sentences. Do not add extra explanation unless asked."
     )
@@ -61,11 +60,10 @@ You are a helpful and knowledgeable AI assistant.
 
 {style_instruction}
 
-Use the context and brief chat history below to answer the user's current question only.
+Use the context and short chat history below to answer the user's current question only.
 
-Do not invent questions.
+Do not invent new questions.
 Do not continue the conversation unless asked.
-If the user asks for more detail, you may expand the answer with examples, but do not start new topics or generate extra prompts.
 
 Context:
 {context}
@@ -91,11 +89,11 @@ User question:
                 }
             ],
             temperature=0.7,
-            max_tokens=350 if wants_detail else 250
+            max_tokens=300
         )
 
         if not response or not response.choices or not response.choices[0].message:
-            return "The assistant could not generate a valid response. Please try again."
+            return "⚠️ The assistant could not generate a valid response. Please try again."
 
         answer = response.choices[0].message.content.strip()
 
@@ -103,9 +101,9 @@ User question:
             answer = answer[len("assistant:"):].strip()
 
         if is_response_broken(answer):
-            return "The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"Error during API call: {e}"
+        return f"⚠️ Error during API call: {e}"
