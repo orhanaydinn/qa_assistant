@@ -160,8 +160,8 @@ User question:
 
         answer = clean_bad_patterns(answer)
 
-        if is_response_broken(answer):
-            return "⚠️ The assistant generated an invalid or off-topic response. Please try rephrasing your question.", status_message
+#        if is_response_broken(answer):
+#            return "⚠️ The assistant generated an invalid or off-topic response. Please try rephrasing your question.", status_message
 
         return answer, status_message
 
