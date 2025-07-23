@@ -1,4 +1,5 @@
 import os
+import requests
 from huggingface_hub import InferenceClient
 
 client = InferenceClient(
@@ -6,19 +7,34 @@ client = InferenceClient(
     token=os.getenv("HF_API_TOKEN")
 )
 
-DETAIL_KEYWORDS = [
-    "example", "give an example", "show an example", "for instance",
-    "explain more", "explain further", "more detail", "detailed",
-    "can you elaborate", "elaborate", "expand", "walk me through",
-    "how does it work", "how does this work", "what does that mean",
-    "what do you mean", "clarify", "can you clarify", "describe",
-    "in depth", "step by step", "demonstrate", "could you show",
-    "show me how", "could you explain that better", "break it down",
-    "break down", "go deeper", "give more information", "deep dive",
-    "drill down", "case study", "use case", "sample use", "walkthrough",
-    "further explanation", "what's an example", "what's a use case", "specific scenario"
-]
+# Basit DuckDuckGo API ile güncel bilgi çekme
+def get_web_summary(query):
+    try:
+        response = requests.get(
+            "https://api.duckduckgo.com/",
+            params={"q": query, "format": "json", "no_html": 1, "skip_disambig": 1},
+            timeout=5
+        )
+        data = response.json()
+        if data.get("Abstract"):
+            return data["Abstract"]
+        elif data.get("RelatedTopics"):
+            return data["RelatedTopics"][0].get("Text", "")
+        else:
+            return ""
+    except Exception as e:
+        return f"(web error: {e})"
 
+# 🧠 Web'e ihtiyaç var mı?
+def needs_web_context(question):
+    keywords = [
+        "2024", "2023", "today", "now", "current", "latest", "this year", "recent",
+        "weather", "election", "result", "news", "price", "score", "exchange rate",
+        "who won", "when is", "what time", "live"
+    ]
+    return any(kw in question.lower() for kw in keywords)
+
+# 🧹 Hallüsinasyon ve spam filtre
 def is_response_broken(text):
     weirdness_score = sum(1 for c in text if ord(c) > 1000 or c in "¼½¾™®©•§µ")
     has_fake_q = any(kw in text.lower() for kw in [
@@ -34,6 +50,7 @@ def is_response_broken(text):
         ])
     )
 
+# 🔍 Roleplay sapması varsa temizle
 def clean_bad_patterns(text):
     bad_tokens = [
         "user:", "question:", "q:", "generate according to", "recent exchange", "note:"
@@ -43,12 +60,32 @@ def clean_bad_patterns(text):
             return text.split(token)[0].strip()
     return text
 
+# 🧠 Ana Zephyr çağrısı
 def generate_zephyr_answer(context, question, history=None):
+    # Web'den güncel bilgi gerekiyorsa context'e ekle
+    if needs_web_context(question):
+        web_info = get_web_summary(question)
+        if web_info:
+            context = f"[WEB RESULT]\n{web_info}\n\n{context}"
+
     history_prompt = ""
     if history:
         last_n = history[-1:] if len(history) >= 1 else history
         for turn in last_n:
             history_prompt += f"{turn['user']}\n{turn['bot']}\n"
+
+    DETAIL_KEYWORDS = [
+        "example", "give an example", "show an example", "for instance",
+        "explain more", "explain further", "more detail", "detailed",
+        "can you elaborate", "elaborate", "expand", "walk me through",
+        "how does it work", "how does this work", "what does that mean",
+        "what do you mean", "clarify", "can you clarify", "describe",
+        "in depth", "step by step", "demonstrate", "could you show",
+        "show me how", "could you explain that better", "break it down",
+        "break down", "go deeper", "give more information", "deep dive",
+        "drill down", "case study", "use case", "sample use", "walkthrough",
+        "further explanation", "what's an example", "what's a use case", "specific scenario"
+    ]
 
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
     last_user_turn = history[-1]["user"] if history else ""
@@ -106,21 +143,19 @@ User question:
         )
 
         if not response or not response.choices or not response.choices[0].message:
-            return "The assistant could not generate a valid response. Please try again."
+            return "⚠️ The assistant could not generate a valid response. Please try again."
 
         answer = response.choices[0].message.content.strip()
 
-        # Başlığı temizle
         if answer.lower().startswith("assistant:"):
             answer = answer[len("assistant:"):].strip()
 
-        # Şüpheli token içeriği varsa erken kes
         answer = clean_bad_patterns(answer)
 
         if is_response_broken(answer):
-            return "The assistant generated an invalid or off-topic response. Please try rephrasing your question."
+            return "⚠️ The assistant generated an invalid or off-topic response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"Error during API call: {e}"
+        return f"⚠️ Error during API call: {e}"
