@@ -39,6 +39,14 @@ def generate_zephyr_answer(context, question, history=None):
     # Detay istiyor mu?
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
 
+    # Bağlamsız detay sorusuysa, önceki user mesajını bağlama ekle
+    last_user_turn = history[-1]["user"] if history else ""
+    if wants_detail and last_user_turn and not any(kw in question.lower() for kw in last_user_turn.lower().split()):
+        effective_question = f"{last_user_turn}\nFollow-up: {question}"
+    else:
+        effective_question = question
+
+    # Prompt stili
     if wants_detail:
         style_instruction = "Provide a more detailed and expanded answer. Include an example if applicable."
     else:
@@ -51,7 +59,7 @@ You are a helpful and knowledgeable AI assistant.
 
 Use the context below to answer the user's question.
 
-Do not invent questions or go off-topic.
+Do not invent new questions or go off-topic.
 Avoid inappropriate or unrelated content.
 Do not exceed 3–5 sentences in total.
 
@@ -62,7 +70,7 @@ Do not exceed 3–5 sentences in total.
 {history_prompt}
 
 [QUESTION]
-{question}
+{effective_question}
 
 [ANSWER]
 """
@@ -72,14 +80,14 @@ Do not exceed 3–5 sentences in total.
             model="HuggingFaceH4/zephyr-7b-alpha",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=250  # sınırlandırılmış üretim
+            max_tokens=250
         )
         answer = response.choices[0].message.content.strip()
 
         if is_response_broken(answer):
-            return "The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"Error during API call: {e}"
+        return f"⚠️ Error during API call: {e}"
