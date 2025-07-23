@@ -21,7 +21,9 @@ DETAIL_KEYWORDS = [
 
 def is_response_broken(text):
     weirdness_score = sum(1 for c in text if ord(c) > 1000 or c in "¼½¾™®©•§µ")
-    has_fake_q = any(kw in text.lower() for kw in ["user:", "question:", "q:", "can you explain more about"])
+    has_fake_q = any(kw in text.lower() for kw in [
+        "user:", "question:", "q:", "generate according to", "recent exchange", "note:"
+    ])
     return (
         len(text) > 2000 or
         weirdness_score > 5 or
@@ -31,6 +33,15 @@ def is_response_broken(text):
             "porn", "xxx", "tube8", "custom essay"
         ])
     )
+
+def clean_bad_patterns(text):
+    bad_tokens = [
+        "user:", "question:", "q:", "generate according to", "recent exchange", "note:"
+    ]
+    for token in bad_tokens:
+        if token in text.lower():
+            return text.split(token)[0].strip()
+    return text
 
 def generate_zephyr_answer(context, question, history=None):
     history_prompt = ""
@@ -51,7 +62,7 @@ def generate_zephyr_answer(context, question, history=None):
 
     style_instruction = (
         "If the user asks for more detail or an example, respond with 3–5 concise sentences. "
-        "Include one focused example relevant to the recent question. Do not go off-topic or provide multiple examples."
+        "Include one focused example only. Do not go off-topic or provide multiple examples."
         if wants_detail
         else "Answer clearly and concisely in 2–3 sentences. Do not add extra explanation unless asked."
     )
@@ -65,7 +76,7 @@ Use the context and short chat history below to answer the user's current questi
 
 Do not invent new questions.
 Do not continue the conversation unless asked.
-Avoid repeating or generating follow-up questions.
+Do not include phrases like 'User:', 'Question:', 'Recent exchange:', 'Note:', or similar formatting in your answer.
 
 Context:
 {context}
@@ -91,23 +102,25 @@ User question:
                 }
             ],
             temperature=0.7,
-            max_tokens=300
+            max_tokens=250
         )
 
         if not response or not response.choices or not response.choices[0].message:
-            return "⚠️ The assistant could not generate a valid response. Please try again."
+            return "The assistant could not generate a valid response. Please try again."
 
         answer = response.choices[0].message.content.strip()
 
-        # Temizlik: “Assistant:” başlığını sil
+        # Başlığı temizle
         if answer.lower().startswith("assistant:"):
             answer = answer[len("assistant:"):].strip()
 
-        # Assistant kendi kendine soru üretmişse temizle
+        # Şüpheli token içeriği varsa erken kes
+        answer = clean_bad_patterns(answer)
+
         if is_response_broken(answer):
-            return "⚠️ The assistant generated an invalid or off-topic response. Please rephrase your question."
+            return "The assistant generated an invalid or off-topic response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"⚠️ Error during API call: {e}"
+        return f"Error during API call: {e}"
