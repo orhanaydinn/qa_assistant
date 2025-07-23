@@ -21,11 +21,10 @@ DETAIL_KEYWORDS = [
 
 def is_response_broken(text):
     return (
-        len(text) > 1500 or
+        len(text) > 2000 or
         any(bad in text.lower() for bad in [
             "retrieved from", "last revised", "wikipedia.org", "porn", "xxx", "tube8", "custom essay"
-        ]) or
-        text.count(" ") < 10
+        ])
     )
 
 def generate_zephyr_answer(context, question, history=None):
@@ -35,7 +34,6 @@ def generate_zephyr_answer(context, question, history=None):
             history_prompt += f"User: {turn['user']}\nAssistant: {turn['bot']}\n"
 
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
-
     last_user_turn = history[-1]["user"] if history else ""
 
     if wants_detail and len(question.split()) <= 8 and last_user_turn:
@@ -43,12 +41,12 @@ def generate_zephyr_answer(context, question, history=None):
     else:
         effective_question = question
 
-    if wants_detail:
-        style_instruction = "Provide a more detailed and expanded answer. Include an example if applicable."
-    else:
-        style_instruction = "Answer clearly and concisely in 2–3 sentences. Do not add extra explanation unless asked."
+    style_instruction = (
+        "Provide a more detailed and expanded answer. Include an example if applicable."
+        if wants_detail
+        else "Answer clearly and concisely in 2–3 sentences. Do not add extra explanation unless asked."
+    )
 
-    # Güncellenmiş prompt
     prompt = f"""
 You are a helpful and knowledgeable AI assistant.
 
@@ -86,12 +84,17 @@ User question:
             temperature=0.7,
             max_tokens=350 if wants_detail else 250
         )
+
+        # Boş veya beklenmedik yanıt kontrolü
+        if not response or not response.choices or not response.choices[0].message:
+            return "The assistant could not generate a valid response. Please try again."
+
         answer = response.choices[0].message.content.strip()
 
         if is_response_broken(answer):
-            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "The assistant encountered an error generating a reliable response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"⚠️ Error during API call: {e}"
+        return f"Error during API call: {e}"
