@@ -7,20 +7,29 @@ client = InferenceClient(
     token=os.getenv("HF_API_TOKEN")
 )
 
-def get_web_summary(query):
+SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+
+def get_web_summary_serper(query):
     try:
-        response = requests.get(
-            "https://api.duckduckgo.com/",
-            params={"q": query, "format": "json", "no_html": 1, "skip_disambig": 1},
-            timeout=5
-        )
-        data = response.json()
-        if data.get("Abstract"):
-            return data["Abstract"]
-        elif data.get("RelatedTopics"):
-            return data["RelatedTopics"][0].get("Text", "")
-        else:
+        headers = {
+            "X-API-KEY": SERPER_API_KEY,
+            "Content-Type": "application/json"
+        }
+        data = {"q": query}
+        res = requests.post("https://google.serper.dev/search", headers=headers, json=data, timeout=8)
+        if res.status_code != 200:
             return ""
+        json_data = res.json()
+
+        snippets = []
+        # 1. AnswerBox varsa onu al
+        if "answerBox" in json_data and "answer" in json_data["answerBox"]:
+            snippets.append(json_data["answerBox"]["answer"])
+        # 2. Organic sonuçlardan ilk 1-2 snippet
+        for item in json_data.get("organic", [])[:2]:
+            if "snippet" in item:
+                snippets.append(item["snippet"])
+        return " ".join(snippets)
     except Exception as e:
         return f"(web error: {e})"
 
@@ -28,7 +37,7 @@ def needs_web_context(question):
     keywords = [
         "2024", "2023", "today", "now", "current", "latest", "this year", "recent",
         "weather", "election", "result", "news", "price", "score", "exchange rate",
-        "who won", "when is", "what time", "live"
+        "who won", "when is", "what time", "live", "president", "prime minister"
     ]
     return any(kw in question.lower() for kw in keywords)
 
@@ -60,10 +69,9 @@ def generate_zephyr_answer(context, question, history=None):
     used_web = False
     status_message = "Generating answer..."
 
-    # web context gerekiyorsa
     if needs_web_context(question):
-        web_info = get_web_summary(question)
-        if web_info:
+        web_info = get_web_summary_serper(question)
+        if web_info and "error" not in web_info.lower():
             context = f"[WEB RESULT]\n{web_info}\n\n{context}"
             used_web = True
             status_message = "Searching the internet..."
@@ -145,7 +153,7 @@ User question:
         )
 
         if not response or not response.choices or not response.choices[0].message:
-            return "The assistant could not generate a valid response. Please try again.", status_message
+            return "⚠️ The assistant could not generate a valid response. Please try again.", status_message
 
         answer = response.choices[0].message.content.strip()
 
@@ -155,9 +163,9 @@ User question:
         answer = clean_bad_patterns(answer)
 
         if is_response_broken(answer):
-            return "The assistant generated an invalid or off-topic response. Please try rephrasing your question.", status_message
+            return "⚠️ The assistant generated an invalid or off-topic response. Please try rephrasing your question.", status_message
 
         return answer, status_message
 
     except Exception as e:
-        return f"Error during API call: {e}", status_message
+        return f"⚠️ Error during API call: {e}", status_message
