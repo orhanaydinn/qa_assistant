@@ -6,7 +6,6 @@ client = InferenceClient(
     token=os.getenv("HF_API_TOKEN")
 )
 
-# Genişletilmiş detay anahtar kelime listesi
 DETAIL_KEYWORDS = [
     "example", "give an example", "show an example", "for instance",
     "explain more", "explain further", "more detail", "detailed",
@@ -20,7 +19,6 @@ DETAIL_KEYWORDS = [
     "further explanation", "what's an example", "what's a use case", "specific scenario"
 ]
 
-# Cevap güvenlik ve tutarlılık kontrolü
 def is_response_broken(text):
     return (
         len(text) > 1500 or
@@ -36,17 +34,14 @@ def generate_zephyr_answer(context, question, history=None):
         for turn in history:
             history_prompt += f"User: {turn['user']}\nAssistant: {turn['bot']}\n"
 
-    # Detay istiyor mu?
     wants_detail = any(keyword in question.lower() for keyword in DETAIL_KEYWORDS)
 
-    # Bağlamsız detay sorusuysa, önceki user mesajını bağlama ekle
     last_user_turn = history[-1]["user"] if history else ""
     if wants_detail and last_user_turn and not any(kw in question.lower() for kw in last_user_turn.lower().split()):
         effective_question = f"{last_user_turn}\nFollow-up: {question}"
     else:
         effective_question = question
 
-    # Prompt stili
     if wants_detail:
         style_instruction = "Provide a more detailed and expanded answer. Include an example if applicable."
     else:
@@ -57,22 +52,20 @@ You are a helpful and knowledgeable AI assistant.
 
 {style_instruction}
 
-Use the context below to answer the user's question.
+Use the context and chat history below to answer the user's current question only.
 
-Do not invent new questions or go off-topic.
-Avoid inappropriate or unrelated content.
-Do not exceed 3–5 sentences in total.
+Do not invent new questions.
+Do not continue the conversation unless asked.
+Only provide a direct answer to the user's question.
 
-[CONTEXT]
+Context:
 {context}
 
-[CONVERSATION HISTORY]
+Chat history:
 {history_prompt}
 
-[QUESTION]
+User question:
 {effective_question}
-
-[ANSWER]
 """
 
     try:
@@ -85,9 +78,9 @@ Do not exceed 3–5 sentences in total.
         answer = response.choices[0].message.content.strip()
 
         if is_response_broken(answer):
-            return "⚠️ The assistant encountered an error generating a reliable response. Please try rephrasing your question."
+            return "The assistant encountered an error generating a reliable response. Please try rephrasing your question."
 
         return answer
 
     except Exception as e:
-        return f"⚠️ Error during API call: {e}"
+        return f"Error during API call: {e}"
