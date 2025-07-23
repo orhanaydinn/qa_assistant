@@ -7,7 +7,6 @@ client = InferenceClient(
     token=os.getenv("HF_API_TOKEN")
 )
 
-# Basit DuckDuckGo API ile güncel bilgi çekme
 def get_web_summary(query):
     try:
         response = requests.get(
@@ -25,7 +24,6 @@ def get_web_summary(query):
     except Exception as e:
         return f"(web error: {e})"
 
-# 🧠 Web'e ihtiyaç var mı?
 def needs_web_context(question):
     keywords = [
         "2024", "2023", "today", "now", "current", "latest", "this year", "recent",
@@ -34,7 +32,6 @@ def needs_web_context(question):
     ]
     return any(kw in question.lower() for kw in keywords)
 
-# 🧹 Hallüsinasyon ve spam filtre
 def is_response_broken(text):
     weirdness_score = sum(1 for c in text if ord(c) > 1000 or c in "¼½¾™®©•§µ")
     has_fake_q = any(kw in text.lower() for kw in [
@@ -50,7 +47,6 @@ def is_response_broken(text):
         ])
     )
 
-# 🔍 Roleplay sapması varsa temizle
 def clean_bad_patterns(text):
     bad_tokens = [
         "user:", "question:", "q:", "generate according to", "recent exchange", "note:"
@@ -60,13 +56,19 @@ def clean_bad_patterns(text):
             return text.split(token)[0].strip()
     return text
 
-# 🧠 Ana Zephyr çağrısı
 def generate_zephyr_answer(context, question, history=None):
-    # Web'den güncel bilgi gerekiyorsa context'e ekle
+    used_web = False
+    status_message = "Generating answer..."
+
+    # web context gerekiyorsa
     if needs_web_context(question):
         web_info = get_web_summary(question)
         if web_info:
             context = f"[WEB RESULT]\n{web_info}\n\n{context}"
+            used_web = True
+            status_message = "Searching the internet..."
+        else:
+            return "⚠️ No reliable up-to-date information was found online.", "Searching the internet..."
 
     history_prompt = ""
     if history:
@@ -143,7 +145,7 @@ User question:
         )
 
         if not response or not response.choices or not response.choices[0].message:
-            return "⚠️ The assistant could not generate a valid response. Please try again."
+            return "The assistant could not generate a valid response. Please try again.", status_message
 
         answer = response.choices[0].message.content.strip()
 
@@ -153,9 +155,9 @@ User question:
         answer = clean_bad_patterns(answer)
 
         if is_response_broken(answer):
-            return "⚠️ The assistant generated an invalid or off-topic response. Please try rephrasing your question."
+            return "The assistant generated an invalid or off-topic response. Please try rephrasing your question.", status_message
 
-        return answer
+        return answer, status_message
 
     except Exception as e:
-        return f"⚠️ Error during API call: {e}"
+        return f"Error during API call: {e}", status_message
