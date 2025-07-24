@@ -76,7 +76,15 @@ if mode == "Chat (PDF QA)":
     question = st.text_input("Your question:")
 
     if st.button("Send") and question:
-        with st.spinner("Generating answer..."):
+        # Önce spinner mesajı alınır
+        _, status_message = generate_zephyr_answer(
+            context="",
+            question=question,
+            chat_history=st.session_state.chat_history,
+            preview=True
+        )
+
+        with st.spinner(status_message):
             context = ""
             if st.session_state.faiss_index and st.session_state.doc_chunks:
                 similar_chunks = search_similar_chunk(
@@ -86,7 +94,12 @@ if mode == "Chat (PDF QA)":
                 )
                 context = "\n".join(similar_chunks)
 
-            answer, _ = generate_zephyr_answer(context, question, st.session_state.chat_history)
+            answer, _ = generate_zephyr_answer(
+                context=context,
+                question=question,
+                chat_history=st.session_state.chat_history
+            )
+
             st.session_state.chat_history.append({"user": question, "bot": answer})
             st.markdown(f"**Answer:** {answer}")
 
