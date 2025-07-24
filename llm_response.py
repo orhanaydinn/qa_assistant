@@ -17,7 +17,7 @@ def get_web_summary_serper(query):
         res = requests.post("https://google.serper.dev/search", headers=headers, json=data, timeout=8)
 
         if res.status_code != 200:
-            print("❌ Serper HTTP Error:", res.status_code)
+            print("Serper HTTP Error:", res.status_code)
             return ""
 
         json_data = res.json()
@@ -31,7 +31,7 @@ def get_web_summary_serper(query):
 
         return " ".join(snippets).strip()
     except Exception as e:
-        print("❌ Serper exception:", e)
+        print("Serper exception:", e)
         return ""
 
 def needs_web_context(question):
@@ -62,7 +62,7 @@ def generate_zephyr_answer(context, question, history=None, preview=False):
             context = f"[WEB RESULT]\n{web_info.strip()}\n\n{context}"
             status_message = "Searching the internet..."
         else:
-            return "⚠️ No reliable up-to-date information was found online.", "Searching the internet..."
+            return "No reliable up-to-date information was found online.", "Searching the internet..."
 
     history_prompt = ""
     if history:
@@ -114,9 +114,9 @@ You are a helpful and concise assistant.
         answer = clean_response(answer)
 
         if is_response_broken(answer):
-            return "⚠️ The assistant generated an invalid response. Please try rephrasing.", status_message
+            return "The assistant generated an invalid response. Please try rephrasing.", status_message
 
         return answer, status_message
 
     except Exception as e:
-        return f"⚠️ Error during API call: {e}", status_message
+        return f"Error during API call: {e}", status_message
