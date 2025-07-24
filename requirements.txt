@@ -1,6 +1,7 @@
 streamlit
-transformers
-torch
-sentence-transformers
+langdetect
+deep-translator
 faiss-cpu
-PyMuPDF
+sentence-transformers
+torch
+requests
