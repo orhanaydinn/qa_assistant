@@ -1,61 +1,27 @@
 import streamlit as st
-from PIL import Image
 from pdf_parser import extract_text_chunks
 from embedder import embed_chunks
 from faiss_search import create_faiss_index, search_similar_chunk
 from llm_response import generate_zephyr_answer
 from image_gen import generate_image_from_prompt
 
-# Sayfa ayarları
 st.set_page_config(page_title="AI Assistant – PDF + Image", layout="centered")
 
 # Başlık
 st.title("Chat with your PDF AI – Zephyr Enhanced")
-st.markdown("""
+st.markdown(
+    """
     <div style='text-align: center; margin-top: -10px; margin-bottom: 30px; font-size: 0.9em; color: gray;'>
         Developed by <strong>Orhan Aydın</strong> – with web-enhanced answers
     </div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
-# Kırmızı buton stili
-st.markdown("""
-    <style>
-    div.stButton > button:first-child {
-        background-color: #ff4b4b;
-        color: white;
-        border: none;
-        padding: 0.75em 2em;
-        border-radius: 8px;
-        font-size: 16px;
-        font-weight: 600;
-        width: 100%;
-        transition: background-color 0.3s ease;
-    }
-
-    div.stButton > button:first-child:hover {
-        background-color: #e64545;
-        color: white;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# Mod seçimi
+# Mod seçici
 mode = st.radio("Select Mode", ["Chat (PDF QA)", "Image Generator"], horizontal=True)
 
-# Dosya yükleme (PDF)
-with st.sidebar:
-    uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
-    if uploaded_file and mode == "Chat (PDF QA)":
-        if uploaded_file.name.lower().endswith(".pdf"):
-            with st.spinner("Parsing PDF..."):
-                chunks = extract_text_chunks(uploaded_file)
-                embeddings = embed_chunks(chunks)
-                index = create_faiss_index(embeddings)
-                st.session_state.doc_chunks = chunks
-                st.session_state.faiss_index = index
-            st.success("PDF parsed and ready!", icon="✅")
-
-# Session state başlat
+# Ortak session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -68,41 +34,48 @@ if "faiss_index" not in st.session_state:
 if "image_history" not in st.session_state:
     st.session_state.image_history = []
 
+# Ortak dosya yükleme (PDF için sol panelde)
+with st.sidebar:
+    uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+
+    if uploaded_file and mode == "Chat (PDF QA)":
+        with st.spinner("Parsing PDF..."):
+            chunks = extract_text_chunks(uploaded_file)
+            embeddings = embed_chunks(chunks)
+            index = create_faiss_index(embeddings)
+
+            st.session_state.doc_chunks = chunks
+            st.session_state.faiss_index = index
+
+        st.success("PDF parsed and ready!", icon="✅")
+
 # ------------------------------
-# Chat (PDF QA) Sekmesi
+# 📄 Chat (PDF QA) Sekmesi
 # ------------------------------
 if mode == "Chat (PDF QA)":
-    st.markdown("### Ask a question about the document")
-    question = st.text_input("Your question:")
+    st.markdown("### Ask a question")
+    user_input = st.text_input("Your question:", key="user_input")
 
-    if st.button("Send") and question:
-        # Önce spinner mesajı alınır
-        _, status_message = generate_zephyr_answer(
-            context="",
-            question=question,
-            chat_history=st.session_state.chat_history,
-            preview=True
-        )
+    if st.button("Send", type="primary", use_container_width=True) and user_input:
+        context = ""
 
-        with st.spinner(status_message):
-            context = ""
-            if st.session_state.faiss_index and st.session_state.doc_chunks:
-                similar_chunks = search_similar_chunk(
-                    question,
-                    st.session_state.faiss_index,
-                    st.session_state.doc_chunks
-                )
-                context = "\n".join(similar_chunks)
-
-            answer, _ = generate_zephyr_answer(
-                context=context,
-                question=question,
-                chat_history=st.session_state.chat_history
+        if st.session_state.doc_chunks and st.session_state.faiss_index is not None:
+            similar_chunks = search_similar_chunk(
+                user_input, st.session_state.faiss_index, st.session_state.doc_chunks
             )
+            context = "\n".join(similar_chunks)
 
-            st.session_state.chat_history.append({"user": question, "bot": answer})
-            st.markdown(f"**Answer:** {answer}")
+        # Spinner mesajı dinamik
+        _, status_message_preview = generate_zephyr_answer(context, user_input, st.session_state.chat_history, preview=True)
 
+        with st.spinner(status_message_preview):
+            answer, _ = generate_zephyr_answer(context, user_input, st.session_state.chat_history)
+            st.session_state.chat_history.append({
+                "user": user_input,
+                "bot": answer
+            })
+
+    # Chat geçmişi
     if st.session_state.chat_history:
         st.markdown("### Conversation")
         for turn in st.session_state.chat_history[::-1]:
@@ -116,26 +89,25 @@ if mode == "Chat (PDF QA)":
 # ------------------------------
 elif mode == "Image Generator":
     st.markdown("### Describe the image you want to generate")
+    prompt = st.text_input("📝 Prompt:", key="image_prompt")
 
-    prompt = st.text_input("📝 Enter your prompt (e.g. 'a cat in watercolor style')")
-
-    if st.button("Generate Image") and prompt:
+    if st.button("Generate Image", use_container_width=True) and prompt:
         with st.spinner("Generating image..."):
             try:
-                result = generate_image_from_prompt(prompt)
+                image = generate_image_from_prompt(prompt)
 
-                # Geçmişe ekle
+                # Geçmişe kaydet
                 st.session_state.image_history.append({
                     "prompt": prompt,
-                    "image": result
+                    "image": image
                 })
 
             except Exception as e:
-                st.error(f"❌ Error generating image: {e}")
+                st.error(f"❌ Error: {e}")
 
-    # Görsel geçmişi (sadece burada gösterilir)
+    # Görsel geçmişi
     if st.session_state.image_history:
-        st.markdown("### Image History")
+        st.markdown("### 🧠 Image History")
         for item in st.session_state.image_history[::-1]:
             with st.chat_message("user"):
                 st.markdown(item["prompt"])
