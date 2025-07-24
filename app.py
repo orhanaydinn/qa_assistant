@@ -18,10 +18,31 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+#  Kırmızı buton stili
+st.markdown("""
+    <style>
+    div.stButton > button {
+        background-color: #ff4b4b;
+        color: white;
+        border: none;
+        padding: 0.75em 2em;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        width: 100%;
+        transition: background-color 0.3s ease;
+    }
+
+    div.stButton > button:hover {
+        background-color: #e64545;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Mod seçici
 mode = st.radio("Select Mode", ["Chat (PDF QA)", "Image Generator"], horizontal=True)
 
-# Ortak session state
+# Session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -34,7 +55,7 @@ if "faiss_index" not in st.session_state:
 if "image_history" not in st.session_state:
     st.session_state.image_history = []
 
-# Ortak dosya yükleme (PDF için sol panelde)
+# Dosya yükleme
 with st.sidebar:
     uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
@@ -50,7 +71,7 @@ with st.sidebar:
         st.success("PDF parsed and ready!", icon="✅")
 
 # ------------------------------
-# 📄 Chat (PDF QA) Sekmesi
+# 📄 Chat (PDF QA)
 # ------------------------------
 if mode == "Chat (PDF QA)":
     st.markdown("### Ask a question")
@@ -65,7 +86,7 @@ if mode == "Chat (PDF QA)":
             )
             context = "\n".join(similar_chunks)
 
-        # Spinner mesajı dinamik
+        # Spinner mesajı
         _, status_message_preview = generate_zephyr_answer(context, user_input, st.session_state.chat_history, preview=True)
 
         with st.spinner(status_message_preview):
@@ -75,7 +96,7 @@ if mode == "Chat (PDF QA)":
                 "bot": answer
             })
 
-    # Chat geçmişi
+    # Geçmiş
     if st.session_state.chat_history:
         st.markdown("### Conversation")
         for turn in st.session_state.chat_history[::-1]:
@@ -85,29 +106,34 @@ if mode == "Chat (PDF QA)":
                 st.markdown(turn["bot"])
 
 # ------------------------------
-# 🖼️ Image Generator Sekmesi
+# 🖼️ Image Generator
 # ------------------------------
 elif mode == "Image Generator":
     st.markdown("### Describe the image you want to generate")
-    prompt = st.text_input("📝 Prompt:", key="image_prompt")
+
+    # 🎯 Prompt + örnek içerik
+    prompt = st.text_input(
+        "📝 Prompt:",
+        placeholder="A futuristic cyberpunk city at night with neon lights",
+        key="image_prompt"
+    )
 
     if st.button("Generate Image", use_container_width=True) and prompt:
         with st.spinner("Generating image..."):
             try:
                 image = generate_image_from_prompt(prompt)
 
-                # Geçmişe kaydet
                 st.session_state.image_history.append({
                     "prompt": prompt,
                     "image": image
                 })
 
             except Exception as e:
-                st.error(f"❌ Error: {e}")
+                st.error(f"Error: {e}")
 
     # Görsel geçmişi
     if st.session_state.image_history:
-        st.markdown("### 🧠 Image History")
+        st.markdown("### Image History")
         for item in st.session_state.image_history[::-1]:
             with st.chat_message("user"):
                 st.markdown(item["prompt"])
