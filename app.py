@@ -138,4 +138,4 @@ elif mode == "Image Generator":
             with st.chat_message("user"):
                 st.markdown(item["prompt"])
             with st.chat_message("assistant"):
-                st.image(item["image"], use_column_width=True)
+                st.image(item["image"], use_container_width=True)
