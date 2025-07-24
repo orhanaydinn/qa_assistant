@@ -4,6 +4,13 @@ from embedder import embed_chunks
 from faiss_search import create_faiss_index, search_similar_chunk
 from llm_response import generate_zephyr_answer
 from image_gen import generate_image_from_prompt
+from translation_utils import (
+    detect_language,
+    translate_to_en,
+    translate_from_en,
+    extract_target_language_instruction,
+    extract_translation_instruction,
+)
 
 st.set_page_config(page_title="AI Assistant – PDF + Image", layout="centered")
 
@@ -18,7 +25,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-#  Kırmızı buton stili
+# Kırmızı buton stili
 st.markdown("""
     <style>
     div.stButton > button {
@@ -78,6 +85,14 @@ if mode == "Chat (PDF QA)":
     user_input = st.text_input("Your question:", key="user_input")
 
     if st.button("Send", type="primary", use_container_width=True) and user_input:
+        user_lang = detect_language(user_input)
+        original_input = user_input
+
+        target_lang = extract_target_language_instruction(original_input)
+
+        if user_lang != "en":
+            user_input = translate_to_en(user_input, user_lang)
+
         context = ""
 
         if st.session_state.doc_chunks and st.session_state.faiss_index is not None:
@@ -86,17 +101,23 @@ if mode == "Chat (PDF QA)":
             )
             context = "\n".join(similar_chunks)
 
-        # Spinner mesajı
         _, status_message_preview = generate_zephyr_answer(context, user_input, st.session_state.chat_history, preview=True)
 
         with st.spinner(status_message_preview):
             answer, _ = generate_zephyr_answer(context, user_input, st.session_state.chat_history)
+
+            if target_lang and target_lang != "en":
+                answer = translate_from_en(answer, target_lang)
+            else:
+                detected_answer_lang = detect_language(answer)
+                if detected_answer_lang != "en":
+                    answer = translate_to_en(answer, detected_answer_lang)
+
             st.session_state.chat_history.append({
-                "user": user_input,
+                "user": original_input,
                 "bot": answer
             })
 
-    # Geçmiş
     if st.session_state.chat_history:
         st.markdown("### Conversation")
         for turn in st.session_state.chat_history[::-1]:
@@ -111,7 +132,6 @@ if mode == "Chat (PDF QA)":
 elif mode == "Image Generator":
     st.markdown("### Describe the image you want to generate")
 
-    # 🎯 Prompt + örnek içerik
     prompt = st.text_input(
         "📝 Prompt:",
         placeholder="A futuristic cyberpunk city at night with neon lights",
@@ -119,19 +139,22 @@ elif mode == "Image Generator":
     )
 
     if st.button("Generate Image", use_container_width=True) and prompt:
+        user_lang = detect_language(prompt)
+        original_prompt = prompt
+
+        if user_lang != "en":
+            prompt = translate_to_en(prompt, user_lang)
+
         with st.spinner("Generating image..."):
             try:
                 image = generate_image_from_prompt(prompt)
-
                 st.session_state.image_history.append({
-                    "prompt": prompt,
+                    "prompt": original_prompt,
                     "image": image
                 })
-
             except Exception as e:
                 st.error(f"Error: {e}")
 
-    # Görsel geçmişi
     if st.session_state.image_history:
         st.markdown("### Image History")
         for item in st.session_state.image_history[::-1]:
