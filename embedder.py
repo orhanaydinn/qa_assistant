@@ -1,13 +1,13 @@
-from transformers import AutoTokenizer, AutoModel
-import torch
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul 22 16:18:01 2025
 
-model_name = "sentence-transformers/all-MiniLM-L6-v2"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModel.from_pretrained(model_name)
+@author: Orhan
+"""
 
-def embed_chunks(text):
-    tokens = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    with torch.no_grad():
-        outputs = model(**tokens)
-        embeddings = outputs.last_hidden_state[:, 0, :]
-    return embeddings[0].numpy()
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+def embed_chunks(chunks):
+    return model.encode(chunks, convert_to_numpy=True)

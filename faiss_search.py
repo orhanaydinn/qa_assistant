@@ -5,13 +5,19 @@ Created on Tue Jul 22 16:18:11 2025
 @author: Orhan
 """
 
-from sklearn.metrics.pairwise import cosine_similarity
+import faiss
 import numpy as np
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def create_faiss_index(embeddings):
-    return embeddings  # FAISS yerine doğrudan numpy array
+    dim = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dim)
+    index.add(np.array(embeddings))
+    return index
 
-def search_similar_chunk(index, query_embedding, top_k=5):
-    similarities = cosine_similarity([query_embedding], index)[0]
-    top_indices = np.argsort(similarities)[::-1][:top_k]
-    return top_indices, similarities[top_indices]
+def search_similar_chunk(question, index, chunks, top_k=1):
+    question_embedding = model.encode([question])
+    distances, indices = index.search(np.array(question_embedding), top_k)
+    return chunks[indices[0][0]]
