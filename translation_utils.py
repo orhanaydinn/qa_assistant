@@ -22,14 +22,14 @@ except Exception as e:
     print("TDK kelime dosyası yüklenemedi:", e)
     turkish_word_set = set()
 # ------------------------
-# 🔍 Türkçe kelime sinyali
+# Türkçe kelime sinyali
 # ------------------------
 def score_turkish_signal(text):
     words = re.findall(r"\\b\\w+\\b", text.lower())
     return sum(1 for word in words if word in turkish_word_set)
 
 # ------------------------
-# 🧠 Güvenli dil tespiti (sadece 'tr' ve 'en')
+# Güvenli dil tespiti (sadece 'tr' ve 'en')
 # ------------------------
 def smart_detect_language(text, threshold=2):
     try:
@@ -51,7 +51,7 @@ def smart_detect_language(text, threshold=2):
     return base_lang
 
 # ------------------------
-# 🌍 Çeviri fonksiyonları
+# Çeviri fonksiyonları
 # ------------------------
 SUPPORTED_LANGUAGES = {
     "en": "english",
@@ -73,7 +73,7 @@ def translate_from_en(text, target_lang="en"):
         return text
 
 # ------------------------
-# 🔁 Dil yönlendirme alias + templates
+# Dil yönlendirme alias + templates
 # ------------------------
 language_aliases = {
     "en": [
@@ -93,7 +93,7 @@ phrase_templates = [
 ]
 
 # ------------------------
-# 🎯 Hedef yanıt dili çıkarımı
+# Hedef yanıt dili çıkarımı
 # ------------------------
 def extract_target_language_instruction(text):
     text_lower = text.casefold()

@@ -50,7 +50,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-mode = st.radio("Select Mode", ["Chat (PDF QA)", "Image Generator", "Performance Test", "User Simulation Test"], horizontal=True)
+mode = st.radio("Select Mode", ["Chat (PDF QA)", "Image Generator"], horizontal=True)
 
 language_selection = st.selectbox("Select Language", ["English", "Turkish", "Auto"], key="language_option")
 
