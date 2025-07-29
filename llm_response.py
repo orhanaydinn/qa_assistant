@@ -1,3 +1,4 @@
+# Güncellenmiş `llm_response.py` içeriğini oluşturuyoruz
 import os
 import requests
 import streamlit as st
@@ -47,10 +48,14 @@ def is_response_broken(text):
     return any(b in text.lower() for b in banned_phrases)
 
 def clean_response(text):
-    bad_tokens = ["user:", "question:", "q:", "note:", "recent exchange:", "[QUESTION]", "[ANSWER]"]
+    bad_tokens = [
+        "user:", "question:", "q:", "note:", "recent exchange:",
+        "[QUESTION]", "[ANSWER]", "[CORRECTION]", "[HISTORY]", "[/HISTORY]", "<|>", "[/RESULT]", "[INST]", "[/INST]"
+    ]
     for token in bad_tokens:
-        if token.lower() in text.lower():
-            return text.split(token)[0].strip()
+        idx = text.lower().find(token.lower())
+        if idx != -1:
+            text = text[:idx]
     return text.strip()
 
 def generate_zephyr_answer(context, question, history=None, preview=False):
@@ -120,3 +125,4 @@ You are a helpful and concise assistant.
 
     except Exception as e:
         return f"Error during API call: {e}", status_message
+
