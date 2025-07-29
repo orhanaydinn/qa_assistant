@@ -5,13 +5,13 @@ Created on Tue Jul 22 16:17:47 2025
 @author: Orhan
 """
 
-import pdfplumber
+import fitz  # PyMuPDF
 
-def extract_text_chunks(pdf_path):
-    text_chunks = []
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if text:
-                text_chunks.append(text)
-    return text_chunks
+def extract_text_chunks(file, chunk_size=150):
+    doc = fitz.open(stream=file.read(), filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    words = text.split()
+    chunks = [" ".join(words[i:i+chunk_size]) for i in range(0, len(words), chunk_size)]
+    return chunks
