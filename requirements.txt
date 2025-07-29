@@ -3,5 +3,5 @@ langdetect==1.0.9
 deep-translator==1.11.4
 faiss-cpu==1.7.4
 sentence-transformers==2.2.2
-torch==2.0.1
+torch==2.2.2
 requests==2.31.0
