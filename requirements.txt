@@ -4,3 +4,4 @@ deep-translator==1.11.4
 transformers==4.36.2
 torch==2.5.1
 requests==2.31.0
+PyMuPDF==1.23.7
