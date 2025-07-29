@@ -1,7 +1,7 @@
-streamlit==1.35.0
+streamlit==1.29.0
 langdetect==1.0.9
 deep-translator==1.11.4
 faiss-cpu==1.7.4
-torch==1.13.1
-transformers==4.38.2
+transformers==4.36.2
+torch==2.0.1
 requests==2.31.0
