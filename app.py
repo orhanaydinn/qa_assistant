@@ -101,8 +101,6 @@ EN_WEB_KEYWORDS = {
 # ==============================
 # UI
 # ==============================
-st.set_page_config(page_title="AI Assistant – PDF/Image + Web + ImageGen", layout="centered")
-
 
 st.markdown("""
 <style>
