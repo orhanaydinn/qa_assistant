@@ -1,32 +1,6 @@
 import os
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
-
-import os
-import requests
-import streamlit as st
-import faiss
-
-# Google Drive'dan FAISS index'i indirip yükleyen fonksiyon
-@st.cache_resource(show_spinner="Downloading FAISS index…")
-def load_faiss_index():
-    FILE_ID = "1PcSKtFPB0NxTRWQkZETpkRwkvLoIeA_O"
-    FAISS_URL = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
-
-    # Hedef klasör: rag_index/
-    save_dir = "rag_index"
-    os.makedirs(save_dir, exist_ok=True)   # klasör yoksa oluştur
-    fp = os.path.join(save_dir, "index.faiss")
-
-    if not os.path.exists(fp):
-        st.write("📥 Downloading index.faiss into rag_index/ ...")
-        r = requests.get(FAISS_URL, stream=True)
-        r.raise_for_status()
-        with open(fp, "wb") as f:
-            for chunk in r.iter_content(1024 * 1024):  # 1MB parçalar halinde indir
-                f.write(chunk)
-
-    return faiss.read_index(fp)
 import streamlit as st
 import math, logging, re, time, io, base64
 import numpy as np
@@ -69,6 +43,20 @@ from ocr_faiss import create_faiss_index as create_ocr_index
 from llm_response import generate_zephyr_answer, needs_web_context
 from rag_dataset_qa import load_rag_index
 from embedder import embed_chunks as embed_any
+
+
+from faiss_loader import load_faiss_index, get_index_status
+
+# --- FAISS index yükleme ---
+status = get_index_status()
+print("FAISS status:", status)
+
+try:
+    faiss_index = load_faiss_index()   # Google Drive’dan indir & yükle
+    print("✅ FAISS ready. ntotal =", getattr(faiss_index, "ntotal", 0))
+except Exception as e:
+    faiss_index = None
+    print("❌ FAISS not available:", e)
 
 # Image generator adapter
 try:
