@@ -3,29 +3,21 @@ os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 import streamlit as st
 
-# >>> BU İLK STREAMLIT KOMUTU OLMAK ZORUNDA <<<
+# ==============================
+# PAGE CONFIG (ilk Streamlit komutu olmak zorunda!)
+# ==============================
 st.set_page_config(
     page_title="AI Assistant – PDF/Image + Web + ImageGen",
-    layout="wide"   # "centered" yerine "wide" denemeni öneririm
+    layout="wide"   # istersen "centered" de yapabilirsin
 )
 
-# --- bundan sonra diğer importlar ---
+# ==============================
+# Normal Python importları
+# ==============================
 import math, logging, re, time, io, base64
 import numpy as np
 from PIL import Image
 import html as htmlmod
-
-# (set_page_config'ten SONRA) diğer modüller:
-from pdf_parser import extract_text_chunks as extract_pdf_chunks
-from faiss_search import create_faiss_index as create_pdf_index
-from ocr_utils import extract_ocr_chunks
-from ocr_faiss import create_faiss_index as create_ocr_index
-from llm_response import generate_zephyr_answer, needs_web_context
-from rag_dataset_qa import load_rag_index
-from embedder import embed_chunks as embed_any
-
-# (set_page_config'ten SONRA) faiss_loader import et
-from faiss_loader import load_faiss_index, get_index_status
 
 # ==============================
 # Logging
@@ -34,10 +26,23 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 log = logging.getLogger("app")
 
 # ==============================
-# Session State Defaults  (set_page_config'ten SONRA!)
+# Proje içi importlar
+# (bunlar set_page_config'ten sonra gelmeli!)
+# ==============================
+from pdf_parser import extract_text_chunks as extract_pdf_chunks
+from faiss_search import create_faiss_index as create_pdf_index
+from ocr_utils import extract_ocr_chunks
+from ocr_faiss import create_faiss_index as create_ocr_index
+from llm_response import generate_zephyr_answer, needs_web_context
+from rag_dataset_qa import load_rag_index
+from embedder import embed_chunks as embed_any
+from faiss_loader import load_faiss_index, get_index_status
+
+# ==============================
+# Session State Defaults
 # ==============================
 defaults = {
-    "chat_history": [],
+    "chat_history": [],          # [{role, content, sources?, uid?}]
     "doc_chunks": None,
     "faiss_index": None,
     "_DATASET_LOADED": False,
@@ -46,31 +51,35 @@ defaults = {
     "temp_input": "",
     "pending_question": None,
     "clear_input_flag": False,
-    "last_upload_type": None,
+    "last_upload_type": None,    # "pdf" | "image"
     "_UPLOADED_CACHE_KEY": None,
     "_UPLOADED_NAME": None,
 }
 for k, v in defaults.items():
     st.session_state.setdefault(k, v)
 
-# --- FAISS index yükleme (artık güvenli) ---
+# ==============================
+# FAISS Index Yükleme
+# ==============================
 status = get_index_status()
 print("FAISS status:", status)
+
 try:
-    faiss_index = load_faiss_index()
+    faiss_index = load_faiss_index()   # Google Drive’dan indir & yükle
     print("✅ FAISS ready. ntotal =", getattr(faiss_index, "ntotal", 0))
 except Exception as e:
     faiss_index = None
     print("❌ FAISS not available:", e)
 
-# Image generator adapter
+# ==============================
+# Image Generator
+# ==============================
 try:
     from image_gen import generate_image_from_prompt
     IMAGE_GEN_AVAILABLE = True
 except Exception as e:
     IMAGE_GEN_AVAILABLE = False
     log.warning(f"image_gen not available: {e}")
-
 # Translation (optional)
 try:
     from translation_utils import smart_detect_language, translate_to_en, translate_from_en
@@ -89,9 +98,6 @@ EN_WEB_KEYWORDS = {
     "winner","final"
 }
 
-# ==============================
-# UI
-# ==============================
 # ==============================
 # UI
 # ==============================
