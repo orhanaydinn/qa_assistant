@@ -1,6 +1,13 @@
 from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Tek embedder modeli – hem PDF hem OCR hem dataset için
+_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+_embedder = SentenceTransformer(_MODEL_NAME)
 
 def embed_chunks(chunks):
-    return model.encode(chunks, convert_to_numpy=True)
+    """
+    Embed a list of text chunks into vector representations.
+    """
+    if not chunks:
+        return []
+    return _embedder.encode(chunks, convert_to_numpy=True)

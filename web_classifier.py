@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 # Eğitim verisi
 training_data = [
     ("What's the job openings in Beijing?", True),
+    ("What is the best restaurant in Bournemouth", True),
     ("Dubai currency rate today", True),
     ("What's the exhibitions in Istanbul?", True),
     ("Los Angeles currency rate today", True),
