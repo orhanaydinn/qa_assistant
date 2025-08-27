@@ -8,6 +8,9 @@ ChatRAG Assistant is a powerful multimodal AI assistant that combines the capabi
 
 ![Image](https://github.com/user-attachments/assets/48d27782-9ab5-47ae-a7f3-86d369e05fbb)
 
+
+![Image](https://github.com/user-attachments/assets/15d60c0b-1dbc-4569-9e6c-127ed1736107)
+
 This assistant is designed to process and respond using a variety of data sources:
 
 - Custom documents (PDFs)
