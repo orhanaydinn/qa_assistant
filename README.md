@@ -1,4 +1,4 @@
-# ChatRAG Assistant
+# Multimodal AI Assistant for Document, Image, and Web Querying
 
 This project is a multimodal AI assistant that integrates Retrieval-Augmented Generation (RAG), OCR, PDF parsing, web search, and image generation into a unified conversational interface. It supports complex queries using both text and visual inputs.
 
