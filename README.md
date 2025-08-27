@@ -1,10 +1,10 @@
-# 🤖 ChatRAG Assistant
+# ChatRAG Assistant
 
-ChatRAG Assistant is a powerful multimodal AI assistant that combines the capabilities of Retrieval-Augmented Generation (RAG), OCR, PDF parsing, web search, and image generation into a unified conversational system — much like ChatGPT but with expanded input and retrieval capabilities.
+This project is a multimodal AI assistant that integrates Retrieval-Augmented Generation (RAG), OCR, PDF parsing, web search, and image generation into a unified conversational interface. It supports complex queries using both text and visual inputs.
 
 ---
 
-## 🧠 Project Overview
+## Project Overview
 
 ![Image](https://github.com/user-attachments/assets/0209eb0a-aac3-4ebc-b4b1-3677446c2e64)
 
@@ -18,7 +18,7 @@ This assistant is designed to process and respond using a variety of data source
 
 ---
 
-## 🗃️ Dataset & Input Types
+## Dataset & Input Types
 
 This project works with:
 - Uploaded **PDF files**
@@ -29,7 +29,7 @@ These inputs are processed and embedded using FAISS for retrieval in context.
 
 ---
 
-## 🔄 Project Flow
+## Project Flow
 
 ### Step 1: Input Collection
 - Accepts input from PDFs, images, or user chat.
@@ -49,7 +49,7 @@ These inputs are processed and embedded using FAISS for retrieval in context.
 
 ---
 
-## 🧪 Modules & Structure
+## Modules & Structure
 
 ```
 app/
@@ -67,7 +67,7 @@ app/
 
 ---
 
-## 📈 Output & Visualization
+## Output & Visualization
 
 - Console-based chat or UI-based interaction
 - Printout of selected context before answering
@@ -76,56 +76,27 @@ app/
 
 ---
 
-## ⏱️ Performance & Optimization
+## Performance & Optimization
 
 - Efficient FAISS-based retrieval for real-time responses
 - Modular structure for easy scaling or switching components (e.g. Pinecone, Claude, etc.)
 
 ---
 
-## 🛠️ Technologies Used
+## Technologies Used
 
-- Python 3.8+
-- OpenAI (LLM + Image Gen)
-- FAISS (Facebook AI Similarity Search)
-- PyMuPDF (PDF parsing)
-- Tesseract OCR
-- Streamlit / CLI (for UI)
-- Requests / SerpAPI (for web search)
-
----
-
-## ▶️ How to Run
-
-1. Clone the repo:
-
-```bash
-git clone https://orhanaydin-ai-asistant-v1.streamlit.app/
-cd chatrag-assistant
-```
-
-2. Create and activate a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-4. Run the assistant:
-
-```bash
-python app/main_ui.py
-```
+- **Python 3.10**
+- **FAISS** (Facebook AI Similarity Search) – for vector-based retrieval in RAG
+- **sentence-transformers** (Hugging Face) – for text embeddings
+- **EasyOCR** – for extracting text from images
+- **Pillow (PIL)** – for image loading and processing
+- **Streamlit** – for building the user interface
+- **HuggingFaceH4/zephyr-7b-beta** – as the LLM for generating text responses
+- **stabilityai/stable-diffusion-xl-base-1.0** – for generating images from prompts
 
 ---
 
-## 👤 Author
+## Author
 
 **Orhan Aydin**  
 *MSc Data Science and Artificial Intelligence*
